@@ -10,5 +10,8 @@ $rootOdinTest='479110.1304';   //示例所解析的一级ODIN标识
 //$rootOdinTest='430983.1406';
 
 $objDemo=new LibPPkODIN();
-$objDemo->getRootOdinSet($rootOdinTest);
+$odinRecord=$objDemo->getRootOdinSet($rootOdinTest);
 
+echo "============= Parsed ODIN record ========\n";
+print_r($odinRecord);
+echo "=========================================\n";

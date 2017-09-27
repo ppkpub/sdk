@@ -32,6 +32,7 @@ define(IPFS_PROXY_URL,'https://ipfs.io/ipfs/');
 class LibPPkODIN{
 
   public function getRootOdinSet($rootOdin){
+    /*
     $arrayTemp=explode('.',$rootOdin);
 
     $blockIndex=intval($arrayTemp[0]);
@@ -54,10 +55,19 @@ class LibPPkODIN{
     //调用blockchain.info提供的HTTP API来获取指定注册ODIN标识对应交易数据
     $strTxJson=file_get_contents('https://blockchain.info/zh-cn/rawtx/'.$txHash);
     $arrayTx=json_decode($strTxJson,true);
-    //print_r($arrayTx);
+    print_r($arrayTx);
 
     $odinRecord=$this->parseOdinTx($arrayTx,$rootOdin);
+    */
+    $odinRecord=$this->getOdinTx($rootOdin,$rootOdin);
+    if($odinRecord==null){
+      echo 'Invalid ODIN!';
+      return null;
+    }
     
+    echo "ODIN[$rootOdin]'s first record:\n";
+    print_r($odinRecord);
+      
     //获取标识相关更新操作记录
     //按ODIN协议规范生成指定标识对应的更新记录特征公钥
     $update_mark_pubkey_hex=PPK_PUBKEY_TYPE_FLAG_HEX.'1F'.bin2hex(FUNC_ID_ODIN_UPDATE);
@@ -85,11 +95,10 @@ class LibPPkODIN{
       $odinUpdateRequest=$this->parseOdinTx($arrayTxs['txs'][$kk],$rootOdin);
 
       $odinRecord=$this->checkUpdateRequest($odinRecord,$odinUpdateRequest);
-      
-      echo "=============Updated ODIN record ========\n";
-      print_r($odinRecord);
-      echo "=========================================\n";
+
     }
+    
+    return $odinRecord;
   }
 
   //检查ODIN更新请求是否合法
@@ -209,8 +218,8 @@ class LibPPkODIN{
     //print_r($arrayBlock);
 
     if(!isset($arrayBlock['blocks'][0]['tx'][$txIndexInBlock])){
-        echo 'Invalid ODIN!';
-        exit;
+        echo 'Invalid ODIN TX-ID:'.$tx_id;
+        return null;
     }
 
     $txRecord=$arrayBlock['blocks'][0]['tx'][$txIndexInBlock];
@@ -219,6 +228,7 @@ class LibPPkODIN{
     //调用blockchain.info提供的HTTP API来获取指定注册ODIN标识对应交易数据
     $strTxJson=file_get_contents('https://blockchain.info/zh-cn/rawtx/'.$txHash);
     $arrayTx=json_decode($strTxJson,true);
+    //print_r($arrayTx);
 
     $odinRecord=$this->parseOdinTx($arrayTx,$full_odin);
 
@@ -234,12 +244,23 @@ class LibPPkODIN{
     $strValidDataInScript='';
 
     $foundPPkFlag=false;
+    
+    $inNum=count($arrayTx['inputs']);
+    for ($kk=0;$kk<$inNum;$kk++) {
+      $inRecord=$arrayTx['inputs'][$kk];
+      //print_r($inRecord);
+      
+      if(isset($inRecord['prev_out']['addr'])){
+        $sourceAddress = $inRecord['prev_out']['addr'];
+        break;
+      }
+    }
             
     $outNum=count($arrayTx['out']);
     for ($kk=0;$kk<$outNum;$kk++) {
       $outRecord=$arrayTx['out'][$kk];
       $script = $outRecord['script'];
-      
+      //print_r($outRecord);
       $tempData=$this->getValidDataFromScript($script,$foundPPkFlag);
       
       if(is_null($tempData)){
@@ -247,15 +268,6 @@ class LibPPkODIN{
             $destAddress = $outRecord['addr'];
         }
       }else{
-          if ($sourceAddress==null) {
-            for($nn=MAX_N;$nn>0;$nn--){
-              if(isset($outRecord['addr'.$nn])){
-                $sourceAddress = $outRecord['addr'.$nn];
-                break;
-              }
-            }
-          }
-          
           $foundPPkFlag=true;
           $strValidDataInScript=$strValidDataInScript.$tempData;
       }
