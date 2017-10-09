@@ -18,8 +18,11 @@ define('API_RESULT_DEBUG_CACHE_STAT','cache_stat');
 
 //设置你的ODIN JAVA管理工具的所在路径
 //Set the sqlite database of ODIN-javatool daemon. 
-define('YOUR_JAVATOOL_SQLITE_DB','/YOUR_JAVATOOL_PATH/resources/db/ppktest-1.db'); 
-define('YOUR_JAVATOOL_SQLITE_DB','E:\MyCoin\PPk\beta\build\resources\db\ppktest-1.db'); 
+define('YOUR_JAVATOOL_PATH','your javatool path here'); 
+
+//设置管理工具的版本: 测试版本为test,正式版本为stable
+//The javatool version: test or stable 
+define('TEST_OR_STABLE','test');  
 
 //确认PHP的PDO和PDO_sqlite模块已经允许使用
 //Please make sure that the PDO and PDO_sqlite are enabled
@@ -28,7 +31,7 @@ define('YOUR_JAVATOOL_SQLITE_DB','E:\MyCoin\PPk\beta\build\resources\db\ppktest-
 $odin_key=safeReqChrStr('odin');
 
 try{
-    $conn = new PDO('sqlite:'.YOUR_JAVATOOL_SQLITE_DB);
+    $conn = new PDO('sqlite:'.YOUR_JAVATOOL_PATH.'/resources/db/ppk'.TEST_OR_STABLE.'-1.db');
     if (!$conn){
       responseApiErrorResult(-1,'sqlite connect failed');
       exit;
