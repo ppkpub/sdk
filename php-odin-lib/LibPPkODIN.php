@@ -197,6 +197,7 @@ class LibPPkODIN{
         }
       }else if(strcmp($update_cmd,ODIN_CMD_TRANS_REGISTER)==0 ){ //×ªÒÆ×¢²áÕß
         $newOdinRecord['register']=$odinUpdateRequest['dest'];
+        $newOdinRecord['auth']=AUTH_MODE_EACH_UPDATE;
       }
     }
     
