@@ -1,7 +1,7 @@
 <?php
 require 'common.php';
 
-
+$qruuid=generateSessionSafeUUID();
 $redirect_url = SERVER_URL.'authorize.php?qruuid='.$qruuid.'&'.$_SESSION['authorize_querystring'];
 
 if(isset($g_logonUserInfo)) {
@@ -9,7 +9,6 @@ if(isset($g_logonUserInfo)) {
     exit;
 }
 
-$qruuid=session_id();
 $confirm_url=SERVER_URL.'login_verify.php?qruuid='.urlencode($qruuid);
 $poll_url='login_poll.php?qruuid='.urlencode($qruuid);
 
@@ -17,6 +16,7 @@ require_once "page_header.inc.php";
 ?>
 <h1>开放认证服务-以奥丁号登录</h1>
 
+<div id="loginform_area" style="display:none;">
 <form class="form-horizontal">
 <div class="form-group">
     <label for="exist_odin_uri" class="col-sm-2 control-label"><?php echo getLang('你的奥丁号');?></label>
@@ -24,16 +24,25 @@ require_once "page_header.inc.php";
       <input type="text" class="form-control"  id="exist_odin_uri" value="ppk:YourODIN#"  onchange="getUserOdinInfo();" readonly >
     </div>
 </div>
-  
 <div class="form-group">
     <label for="use_exist_odin" class="col-sm-2 control-label"></label>
     <div class="col-sm-10">
       <input type='button' class="btn btn-success"  id="use_exist_odin" value=' <?php echo getLang('使用支持奥丁号的APP自主验证身份');?> ' onclick='authAsOdinOwner();' disabled="true"><br><br>
-      <input type='button' class="btn btn-warning"  id="test_login_btn" value=' <?php echo getLang('使用支持奥丁号的APP扫码登录');?> ' onclick='makeQrCode();' ><br>
-      <div id="qrcode_img" ></div><br>
-      <font size="-2">(<?php echo getLang('注：需升级到PPkBrowser安卓版0.305以上版本，');?><a href="https://ppkpub.github.io/docs/help_ppkbrowser/#s05"><?php echo getLang('请点击阅读这里的操作说明安装和使用。');?></a><?php echo getLang('更多信息，');?><a href="https://ppkpub.github.io/docs/" target="_blank"><?php echo getLang('可以参考奥丁号和PPk开放协议的资料进一步了解。');?></a>)</font>
     </div>
 </div>
+</form>
+</div>
+
+<div id="qrcode_area" align="center" style="display:none;">
+<p><strong><?php echo getLang('使用支持奥丁号的APP扫码登录（如PPk浏览器、微信等）');?></strong></p>
+<!--
+    <input type='button' class="btn btn-warning"  id="test_login_btn" value=' <?php echo getLang('使用支持奥丁号的APP扫码登录');?> ' onclick='makeQrCode();' ><br>-->
+    <div id="qrcode_img" ></div><br>
+
+</div>
+<p align="center">
+<font size="-2">(<?php echo getLang('注：需升级到PPkBrowser安卓版0.305以上版本，');?><a href="https://ppkpub.github.io/docs/help_ppkbrowser/#s05"><?php echo getLang('请点击阅读这里的操作说明安装和使用。');?></a><?php echo getLang('更多信息，');?><a href="https://ppkpub.github.io/docs/" target="_blank"><?php echo getLang('可以参考奥丁号和PPk开放协议的资料进一步了解。');?></a>)</font>
+</p>
 
 <script src="js/common_func.js"></script>
 <script type="text/javascript" src="js/qrcode.js"></script>
@@ -50,17 +59,22 @@ function init(){
         console.log("PeerWeb enabled");
         //document.getElementById("use_exist_odin").disabled=false;
         
+        //显示登录表单
+        document.getElementById('loginform_area').style.display="";
+        
         //读取PPk浏览器内置钱包中缺省用户身份标识
         PeerWeb.getDefaultODIN(
             'callback_getDefaultODIN'  //回调方法名称
         );
+        
+        
     }else{
         console.log("PeerWeb not valid");
         //alert("PeerWeb not valid. Please visit by PPk Browser For Android v0.2.6 above.");
-        //document.getElementById("use_exist_odin").disabled=true;
-        
-        //将焦点自动切换到输入用户奥丁号一栏
-        document.getElementById("exist_odin_uri").focus();
+
+        //显示扫码登录
+        document.getElementById('qrcode_area').style.display="";
+        makeQrCode();
     }
 }
 
@@ -159,7 +173,7 @@ function callback_signWithPPkResourcePrvKey(status,obj_data){
 
 function confirmExistODIN(user_odin_uri,auth_txt_hex,user_sign,success_info){
     var confirm_url='login_verify.php?user_odin_uri='+encodeURIComponent(user_odin_uri)+'&auth_txt_hex='+auth_txt_hex+'&user_sign='+encodeURIComponent(user_sign);
-    document.getElementById("exist_odin_uri").value=confirm_url;
+    //document.getElementById("exist_odin_uri").value=confirm_url;
     $.ajax({
         type: "GET",
         url: confirm_url,

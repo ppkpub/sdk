@@ -12,7 +12,7 @@ $response_type=safeReqChrStr('response_type');
 
 if(empty($qruuid) )
 {
-    $qruuid=session_id(); 
+    $qruuid=generateSessionSafeUUID(); 
 }
 
 if( !empty($user_odin_uri) ){
@@ -152,7 +152,9 @@ function init(){
     }else{
         console.log("PeerWeb not valid");
         //alert("PeerWeb not valid. Please visit by PPk Browser For Android v0.2.6 above.");
-        document.getElementById("btn_use_exist_odin").value="请使用PPk浏览器安卓版APP来扫码登录！";
+        //document.getElementById("btn_use_exist_odin").value="请使用PPk浏览器安卓版APP来扫码登录！";
+        
+        window.location.href = "<?php echo WEIXIN_QR_SERVICE_URL;?>?login_confirm_url=<?php echo urlencode(getCurrentUrl());?>";
     }
 }
 

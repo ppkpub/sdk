@@ -4,7 +4,7 @@
  */
 require_once "ppk_swap.inc.php";
 
-$qruuid=session_id();
+$qruuid=generateSessionSafeUUID();
 
 /*
 $qruuid=safeReqChrStr('qruuid');

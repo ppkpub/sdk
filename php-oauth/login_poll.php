@@ -11,6 +11,6 @@ if ($g_logonUserInfo!=null){
     
     $arr = array('code' => 0, 'msg' => 'Confirmed OK', 'logon_user_uri' => $g_logonUserInfo["user_uri"], 'level' => $g_logonUserInfo['level']);
 }else
-    $arr = array('code' => 500, 'msg' => 'Pending','uuid'=>session_id());
+    $arr = array('code' => 500, 'msg' => 'Pending','uuid'=>generateSessionSafeUUID());
 
 echo json_encode($arr);

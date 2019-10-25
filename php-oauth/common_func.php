@@ -343,3 +343,8 @@ function getCurrentMicroTime()
     return $time;
 }
 
+
+//基于session id进一步生成UUID（最大为32字节），用于URL参数中安全传递，避免直接暴露session_id
+function generateSessionSafeUUID(){
+    return substr(hash('ripemd160', session_id()),0,32);
+}

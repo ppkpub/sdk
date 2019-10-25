@@ -11,10 +11,11 @@ define('PPK_URI_PREFIX','ppk:'); //ppk标识前缀
 define('PPK_URI_RES_FLAG','#');  //ppk标识资源版本前缀
 
 define('PTTP_NODE_API_URL','http://tool.ppkpub.org/odin/');   //此处配置PTTP协议代理节点
+define('WEIXIN_QR_SERVICE_URL','https://ppk001.sinaapp.com/odin/');   //此处配置微信扫码登录服务网址
 
 $dbhost = "localhost";                                    
-$dbuser = 'testuser';
-$dbpass = 'test123';
+$dbuser = 'swapuser';
+$dbpass = 'sW#&6p#2';
 $dbname = "odinoauth"; 
 
 $dsn    = 'mysql:dbname='.$dbname.';host='.$dbhost;
@@ -60,7 +61,7 @@ function getLogonUserInfo(){
     global $g_dbLink;
     
     //echo 'seesion_id=[',session_id(),']';
-    $qruuid=session_id();
+    $qruuid=generateSessionSafeUUID();
     $sql = "select * from qrcodelogin where qruuid='" . $qruuid . "'";
     //echo $sql;
     $rs = mysqli_query($g_dbLink,$sql);
@@ -82,7 +83,7 @@ function getLogonUserInfo(){
 //撤消当前登录用户信息
 function unsetLogonUser(){
     global $g_dbLink;
-    $qruuid=session_id();
+    $qruuid=generateSessionSafeUUID();
     $sql = "delete from qrcodelogin where qruuid='" . $qruuid . "'";
     //echo $sql;
     mysqli_query($g_dbLink,$sql);
