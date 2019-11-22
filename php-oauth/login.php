@@ -35,10 +35,8 @@ require_once "page_header.inc.php";
 
 <div id="qrcode_area" align="center" style="display:none;">
 <p><strong><?php echo getLang('使用支持奥丁号的APP扫码登录（如PPk浏览器、微信等）');?></strong></p>
-<!--
-    <input type='button' class="btn btn-warning"  id="test_login_btn" value=' <?php echo getLang('使用支持奥丁号的APP扫码登录');?> ' onclick='makeQrCode();' ><br>-->
     <div id="qrcode_img" ></div><br>
-
+<p>或者<a href="<?php echo $confirm_url;?>" target="LocalPPkTool" ><?php echo getLang('本地钱包工具登录');?></a></p>
 </div>
 <p align="center">
 <font size="-2">(<?php echo getLang('注：需升级到PPkBrowser安卓版0.305以上版本，');?><a href="https://ppkpub.github.io/docs/help_ppkbrowser/#s05"><?php echo getLang('请点击阅读这里的操作说明安装和使用。');?></a><?php echo getLang('更多信息，');?><a href="https://ppkpub.github.io/docs/" target="_blank"><?php echo getLang('可以参考奥丁号和PPk开放协议的资料进一步了解。');?></a>)</font>
@@ -55,7 +53,14 @@ window.onload=function(){
 
 function init(){
     console.log("init...");
-    if(typeof(PeerWeb) !== 'undefined'){ //检查PPk开放协议相关PeerWeb JS接口可用性
+    if(typeof(PeerWeb) == 'undefined'){ //检查PPk开放协议相关PeerWeb JS接口可用性
+        console.log("PeerWeb not valid");
+        //alert("PeerWeb not valid. Please visit by PPk Browser For Android v0.2.6 above.");
+
+        //显示扫码登录
+        document.getElementById('qrcode_area').style.display="";
+        makeQrCode();
+    }else{
         console.log("PeerWeb enabled");
         //document.getElementById("use_exist_odin").disabled=false;
         
@@ -66,15 +71,6 @@ function init(){
         PeerWeb.getDefaultODIN(
             'callback_getDefaultODIN'  //回调方法名称
         );
-        
-        
-    }else{
-        console.log("PeerWeb not valid");
-        //alert("PeerWeb not valid. Please visit by PPk Browser For Android v0.2.6 above.");
-
-        //显示扫码登录
-        document.getElementById('qrcode_area').style.display="";
-        makeQrCode();
     }
 }
 

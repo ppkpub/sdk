@@ -75,7 +75,7 @@ if (isset($_REQUEST['code']) && $_SERVER['REQUEST_URI']) {
 }
  
 // 步骤1，点击此链接跳转到开放认证服务
-$auth_url = SERVER_URL.'authorize.php?response_type=code&client_id='.CLIENT_ID.'&state='.CLIENT_SECRET.'&redirect_uri='. REDIRECT_URI;
+$auth_url = SERVER_URL.'authorize.php?response_type=code&client_id='.CLIENT_ID.'&state='.CLIENT_ID.'&redirect_uri='. REDIRECT_URI;
  
 if($userInfo){
     echo '欢迎 ',$userInfo['client_user_odin_uri'],' 头像 <img src="',$userInfo['client_avatar'],'" alt="" />

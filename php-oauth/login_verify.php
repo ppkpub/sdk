@@ -137,7 +137,11 @@ window.onload=function(){
 
 function init(){
     console.log("init...");
-    if(typeof(PeerWeb) !== 'undefined'){ //检查PPk开放协议相关PeerWeb JS接口可用性
+    if(typeof(PeerWeb) == 'undefined'){ //检查PPk开放协议相关PeerWeb JS接口可用性
+        console.log("PeerWeb not valid");
+        
+        window.location.href = "<?php echo WEIXIN_QR_SERVICE_URL;?>?login_confirm_url=<?php echo urlencode(getCurrentUrl());?>";
+    }else{
         console.log("PeerWeb enabled");
         
         var exist_odin_uri=getUserPPkURI(document.getElementById("exist_odin_uri").value);
@@ -149,12 +153,6 @@ function init(){
         }else{
             getUserOdinInfo();
         }
-    }else{
-        console.log("PeerWeb not valid");
-        //alert("PeerWeb not valid. Please visit by PPk Browser For Android v0.2.6 above.");
-        //document.getElementById("btn_use_exist_odin").value="请使用PPk浏览器安卓版APP来扫码登录！";
-        
-        window.location.href = "<?php echo WEIXIN_QR_SERVICE_URL;?>?login_confirm_url=<?php echo urlencode(getCurrentUrl());?>";
     }
 }
 
