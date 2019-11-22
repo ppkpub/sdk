@@ -62,7 +62,7 @@ if (isset($_REQUEST['code']) && $_SERVER['REQUEST_URI']) {
     $_SESSION['access_token'] = $response['access_token'];
  
     // 步骤6 使用令牌获取用户信息
-    $response_text = file_get_contents(RESOURCE_URL.'?client_id='.CLIENT_ID.'&state='.CLIENT_SECRET.'&access_token='.$_SESSION['access_token']);
+    $response_text = file_get_contents(RESOURCE_URL.'?client_id='.CLIENT_ID.'&state=test&access_token='.$_SESSION['access_token']);
     $response = json_decode($response_text, true);
  
     $userInfo = array(
@@ -75,7 +75,7 @@ if (isset($_REQUEST['code']) && $_SERVER['REQUEST_URI']) {
 }
  
 // 步骤1，点击此链接跳转到开放认证服务
-$auth_url = SERVER_URL.'authorize.php?response_type=code&client_id='.CLIENT_ID.'&state='.CLIENT_ID.'&redirect_uri='. REDIRECT_URI;
+$auth_url = SERVER_URL.'authorize.php?response_type=code&client_id='.CLIENT_ID.'&state=test&redirect_uri='. REDIRECT_URI;
  
 if($userInfo){
     echo '欢迎 ',$userInfo['client_user_odin_uri'],' 头像 <img src="',$userInfo['client_avatar'],'" alt="" />
