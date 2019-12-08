@@ -11,8 +11,15 @@ $token = $server->getAccessTokenData(OAuth2\Request::createFromGlobals());
 
 //echo "User ID associated with this token is {$token['user_id']}";
 
-echo json_encode(array('success'=>true, 'userInfo'=>[
-    'user_odin_uri'=> $token['user_id'],
-    'username'=> $token['user_id'],
-    'avatar'=> 'http://ppkpub.org/images/user.png'
-]));
+header('Content-type: application/json;charset=UTF-8');
+
+echo json_encode(
+    array(
+      'success'=>true, 
+      'userInfo'=>array(
+        'user_odin_uri'=> $token['user_id'],
+        'username'=> '',
+        'avatar'=> 'http://ppkpub.org/images/user.png'
+      )
+    )
+ );

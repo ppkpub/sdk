@@ -139,7 +139,7 @@ function  getUserOwnedRootODINs($user_btc_address,$start=0,$limit=100){
         $user_btc_address=substr($user_btc_address,8);
     }
 
-    $ppk_url='http://tool.ppkpub.org/odin/query.php?address='.$user_btc_address.'&start='.$start.'&limit='.$limit;
+    $ppk_url=PTTP_NODE_API_URL.'query.php?address='.$user_btc_address.'&start='.$start.'&limit='.$limit;
     $tmp_ppk_resp_str=file_get_contents($ppk_url);
     //echo '$ppk_url=',$ppk_url,',$tmp_ppk_resp=',$tmp_ppk_resp_str;
     $tmp_obj_resp=@json_decode($tmp_ppk_resp_str,true);

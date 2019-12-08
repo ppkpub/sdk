@@ -1,7 +1,4 @@
 <?php
-// error reporting (this is a demo, after all!)
-ini_set('display_errors',1);error_reporting(E_ALL);
-
 define('COIN_TYPE_BITCOIN','bitcoin:');   
 define('COIN_TYPE_BITCOINCASH','ppk:bch/');   
 define('COIN_TYPE_BYTOM','ppk:joy/btm/');   
@@ -10,23 +7,12 @@ define('DID_URI_PREFIX','did:'); //DID标识前缀
 define('PPK_URI_PREFIX','ppk:'); //ppk标识前缀
 define('PPK_URI_RES_FLAG','#');  //ppk标识资源版本前缀
 
-define('PTTP_NODE_API_URL','http://tool.ppkpub.org/odin/');   //此处配置PTTP协议代理节点
-define('WEIXIN_QR_SERVICE_URL','https://ppk001.sinaapp.com/odin/');   //此处配置微信扫码登录服务网址
-
-$dbhost = "localhost";                                    
-$dbuser = 'swapuser';
-$dbpass = 'sW#&6p#2';
-$dbname = "odinoauth"; 
-
-$dsn    = 'mysql:dbname='.$dbname.';host='.$dbhost;
-
+require_once('config/config.inc.php');
 
 require_once('OAuth2/Autoloader.php');
 OAuth2\Autoloader::register();
 
-define('CLIENT_URL', 'https://tool2.ppkpub.org/oauth/');
-define('SERVER_URL', 'https://tool2.ppkpub.org/oauth/');
-
+$dsn    = 'mysql:dbname='.$dbname.';host='.$dbhost;
 $storage = new \OAuth2\Storage\Pdo(array('dsn' => $dsn, 'username' => $dbuser, 'password' => $dbpass));
 
 $server = new OAuth2\Server($storage);
@@ -45,12 +31,9 @@ session_start();
 $g_logonUserInfo=getLogonUserInfo();
 if($g_logonUserInfo!=null){
   $g_currentUserODIN=$g_logonUserInfo["user_uri"];
-  //$g_currentUserName=$g_logonUserInfo["name"];
   $g_currentUserLevel=$g_logonUserInfo["level"];
-  //$g_currentUserAvtar=$_SESSION["swap_user_avtar_url"];
 }else{
   $g_currentUserODIN='';
-  //$g_currentUserName='';
   $g_currentUserLevel=0;
 }
 
@@ -62,7 +45,7 @@ function getLogonUserInfo(){
     
     //echo 'seesion_id=[',session_id(),']';
     $qruuid=generateSessionSafeUUID();
-    $sql = "select * from qrcodelogin where qruuid='" . $qruuid . "'";
+    $sql = "select * from oauth_ppk_login where qruuid='" . $qruuid . "'";
     //echo $sql;
     $rs = mysqli_query($g_dbLink,$sql);
     if (!$rs) {
@@ -84,11 +67,10 @@ function getLogonUserInfo(){
 function unsetLogonUser(){
     global $g_dbLink;
     $qruuid=generateSessionSafeUUID();
-    $sql = "delete from qrcodelogin where qruuid='" . $qruuid . "'";
+    $sql = "delete from oauth_ppk_login where qruuid='" . $qruuid . "'";
     //echo $sql;
     mysqli_query($g_dbLink,$sql);
 }
-
 
 function getLang($cn_str){
     return $cn_str;

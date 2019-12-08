@@ -57,7 +57,7 @@ if( !empty($user_odin_uri) ){
     }
     
     //保存登录状态
-    $sql = "REPLACE INTO qrcodelogin (qruuid,user_odin_uri,user_sign,status_code) values ('$qruuid','$user_odin_uri','$user_sign',$user_loginlevel)";
+    $sql = "REPLACE INTO oauth_ppk_login (qruuid,user_odin_uri,user_sign,status_code) values ('$qruuid','$user_odin_uri','$user_sign',$user_loginlevel)";
     $result = @mysqli_query($g_dbLink,$sql);
 
     if($result===false)
@@ -68,10 +68,10 @@ if( !empty($user_odin_uri) ){
     }
 
     if($response_type=='html'){
-        echo '<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/></head>';
-        echo '扫码验证通过，请回到所登录设备上继续访问。<br>Verified ok as ',getSafeEchoTextToPage($user_odin_uri);
+        require_once "page_header.inc.php";
+        echo '<center><br><br><h3>扫码验证奥丁号通过<br>ODIN verified OK</h3><br><P><font color="#FF7026">',getSafeEchoTextToPage($user_odin_uri),'</font><br><br>请回到所登录设备或网站上继续访问。<br>Please go back the device or page to continue. </p></center>';
     }else{
-        $arr = array('code' => 0, 'msg' => '扫码验证通过，请回到所登录设备上继续访问。user_sign verified ok as '.$user_odin_uri);
+        $arr = array('code' => 0, 'msg' => '扫码验证通过，请回到所登录设备或网站上继续访问。user_sign verified ok as '.$user_odin_uri);
         echo json_encode($arr);
     }
     exit(0);

@@ -15,7 +15,7 @@ if(strlen($qruuid)==0){
 }
 */
 
-$sql_str = "REPLACE INTO qrcodelogin (qruuid) VALUES ('". $qruuid ."');";
+$sql_str = "REPLACE INTO oauth_ppk_login (qruuid) VALUES ('". $qruuid ."');";
 $result=mysqli_query($g_dbLink,$sql_str);
 if($result===false)
 {
