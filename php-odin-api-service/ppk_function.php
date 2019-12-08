@@ -14,7 +14,6 @@ function respPttpException( $status_code,$status_detail ) {
     echo generatePttpData(AP_DEFAULT_ODIN.'/'.$status_code.'#1.0',$status_code,$status_detail,'text/html','','no-store');
 }
 
-
 /*
  生成PTTP应答数据包
 */
@@ -64,7 +63,6 @@ function generatePttpSign($str_hash_algo,$str_private_key,$str_resp_data){
   
   $vd_prv_key="-----BEGIN PRIVATE KEY-----\n".$str_private_key."-----END PRIVATE KEY-----";
 
-  //$str_resp_sign=rsaSign($str_resp_data,$vd_prv_key,);
   $str_resp_sign=rsaSign($str_resp_data,$vd_prv_key,$str_hash_algo);
 
   $pttp_sign=$str_hash_algo."withRSA:".$str_resp_sign;
