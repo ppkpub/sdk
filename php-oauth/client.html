@@ -1,0 +1,93 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>以奥丁号登录的简单示例（HTML+JS）</title>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://netdna.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+</head>
+
+<center>
+<h3>以奥丁号登录的简单示例（HTML+JS）</h3>
+<button id='btnOAuthLogin' onclick="openOAuthLogin();">使用奥丁号(ODIN)登录</button>
+</center>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+<script>
+//配置参数
+var mStrClientID    = 'testclient'; //登记的OAuth应用标识
+var mstrStateFlag   = 'login';  //自定义的OAuth特征值
+var mStrOAuthRedirectURI = 'https://tool2.ppkpub.org/oauth/client.html';  //OAuth回调网址
+var mStrAppApiURI = 'https://tool2.ppkpub.org/oauth/client_api.php';  //应用的后端API网址
+
+window.onload=function(){
+    init();
+}
+
+function init(){
+    console.log("init...");
+    
+    //检查是否为OAuth返回处理
+    var OAuth_state=getQueryString('state');
+    if(OAuth_state !=null && OAuth_state == mstrStateFlag)
+    {
+        var OAuth_code=getQueryString('code');
+        if(OAuth_code !=null && OAuth_code.length>1)
+        {
+           console.log( "OAuth_code=" + OAuth_code );
+           $("#btnOAuthLogin").html("正在验证奥丁号登录授权，请稍候...");
+           doOdinLogin(OAuth_code);
+        }
+    }
+}
+
+//打开OAuth方式验证ODIN服务网址
+function openOAuthLogin(){
+    top.location ='https://tool2.ppkpub.org/oauth/authorize.php?response_type=code&client_id='+mStrClientID+'&state='+mstrStateFlag+'&redirect_uri='+encodeURIComponent(mStrOAuthRedirectURI);
+}
+
+//与应用后端交互完成ODIN号授权登录
+function doOdinLogin(oauth_code) {
+    var api_url = mStrAppApiURI+ '?code='+encodeURIComponent(oauth_code)+'&redirect_uri='+encodeURIComponent(mStrOAuthRedirectURI);
+    console.log("api_url = "+api_url);
+    $.ajax({
+        type: "get",
+        url: api_url,
+        data: null,
+        success: function (result) {
+            console.log(result);
+            
+            if (result.status == "OK") {
+                //登陆成功
+                $("#btnOAuthLogin").html("已经登录成功，用户身份标识为 "+result.user_info.client_user_odin_uri);
+            } else {
+                $("#btnOAuthLogin").html("出错了("+result.errorCode+"),请重试");
+            }
+
+        }
+    });
+}
+
+//获取网页URL中的参数
+function getQueryString(name) 
+{
+     var reg = new RegExp("(^|&)"+ name +"=([^&]*)(&|$)");
+     var r = window.location.search.substr(1).match(reg);//search,查询？后面的参数，并匹配正则
+     if(r!=null)return  unescape(r[2]); return null;
+}
+
+//获取网页URL前缀（http(s)://域名）
+function getUrlPrefix(){ 
+    var tmp_url=window.location.protocol+"//"+window.location.host;
+    return tmp_url;
+}
+
+
+</script>
+
+</body>
+</html>

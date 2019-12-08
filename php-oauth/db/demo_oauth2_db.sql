@@ -46,7 +46,7 @@ CREATE TABLE `oauth_clients` (
 -- Records of oauth_clients
 -- ----------------------------
 BEGIN;
-INSERT INTO `oauth_clients` VALUES ('testclient', 'testpass', 'https://tool2.ppkpub.org/oauth/client.php', NULL, NULL, NULL);
+INSERT INTO `oauth_clients` VALUES ('testclient', 'testpass', '', NULL, NULL, NULL);
 COMMIT;
 
 -- ----------------------------
@@ -95,16 +95,9 @@ CREATE TABLE `oauth_users` (
   PRIMARY KEY (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
--- ----------------------------
--- Records of oauth_users
--- ----------------------------
-BEGIN;
-INSERT INTO `oauth_users` VALUES ('shanhuhai', '123123', NULL, NULL, 'http://www.dahouduan.com/wp-content/uploads/2017/11/avatar.jpg');
-COMMIT;
-
 SET FOREIGN_KEY_CHECKS = 1;
 
-CREATE TABLE IF NOT EXISTS `qrcodelogin` (
+CREATE TABLE IF NOT EXISTS `oauth_ppk_login` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `qruuid` varchar(32) NOT NULL DEFAULT '',
   `user_odin_uri` varchar(50) DEFAULT NULL,
