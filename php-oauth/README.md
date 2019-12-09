@@ -4,6 +4,7 @@ client.php    应用端示例动态页面
 
 client.html   应用端示例静态页面
 client_api.html   配合静态页面的后台API实现
+js/ppk_oauth_sdk.js  对应JS SDK
 
 index.php     服务端登记入口
 
