@@ -9,7 +9,7 @@ js/ppk_oauth_sdk.js  对应JS SDK
 index.php     服务端登记入口
 
 authorize.php 服务端调用接口
-  如: https://tool2.ppkpub.org/oauth/authorize.php?response_type=code&client_id=testclient&state=testclient&redirect_uri=https://tool2.ppkpub.org/oauth/client.php
+  如: https://tool.ppkpub.org/oauth/authorize.php?response_type=code&client_id=testclient&state=testclient&redirect_uri=https://tool.ppkpub.org/oauth/client.php
 
   
 运行服务端的提示：
