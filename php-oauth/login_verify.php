@@ -9,6 +9,8 @@ $user_odin_uri=safeReqChrStr('user_odin_uri');
 $auth_txt_hex=safeReqChrStr('auth_txt_hex');
 $user_sign = safeReqChrStr('user_sign');
 $response_type=safeReqChrStr('response_type');
+$fast_authorize_url=safeReqChrStr('fast_authorize_url');
+
 
 if(empty($qruuid) )
 {
@@ -24,35 +26,13 @@ if( !empty($user_odin_uri) ){
             exit(-1);
         }
         
-        //获取公钥
-        $tmp_user_info = getPubUserInfo($user_odin_uri);
-        $str_pubkey=$tmp_user_info['pubkey'];
-
-        $user_loginlevel=0;
-        if(strlen($str_pubkey)==0 ){
-            $arr = array('code' => 501, 'msg' => '没有获得对应公钥. Invalid pubkey!');
-            echo json_encode($arr);
-            exit(-1);
-        }else{
+        $arr=authSignatureOfODIN($user_odin_uri,$str_original,$user_sign);
+        
+        if($arr['code']==0){
             $user_loginlevel=2;
-            
-            //验证签名
-            $array_sign_chunks=explode(':',$user_sign);
-            if($array_sign_chunks[0]=='bitcoin_secp256k1'){ //用比特币签名算法验证签名
-                $tmp_check_url=PTTP_NODE_API_URL.'check_sign.php?pubkey='.urlencode($str_pubkey).'&sign='.urlencode($array_sign_chunks[1]).'&algo='.urlencode($array_sign_chunks[0]).'&original='.urlencode($str_original);
-
-                $result=trim(file_get_contents($tmp_check_url));
-
-                if(strcasecmp($result,'OK')!=0){
-                    $arr = array('code' => 502, 'msg' => '比特币签名算法验证未通过. Invalid bitcoin signature!');
-                    echo json_encode($arr);
-                    exit(-1);
-                }
-            }else if(!rsaVerify($str_original, $str_pubkey, $array_sign_chunks[1],$array_sign_chunks[0])){ //其他默认尝试用RSA算法验证
-                $arr = array('code' => 503, 'msg' => 'RSA签名验证未通过. Invalid RSA signature!');
-                echo json_encode($arr);
-                exit(-1);
-            }
+        }else{
+            responseResult($response_type,$arr);
+            exit(-1);
         }
     }
     
@@ -67,7 +47,10 @@ if( !empty($user_odin_uri) ){
         exit(-1);
     }
 
-    if($response_type=='html'){
+    if(strlen($fast_authorize_url)>0){
+        //与客户端、钱包工具是在同一浏览器环境下，直接跳到确认授权
+        header("location: ".$fast_authorize_url);
+    }else if($response_type=='html'){
         require_once "page_header.inc.php";
         echo '<center><br><br><h3>扫码验证奥丁号通过<br>ODIN verified OK</h3><br><P><font color="#FF7026">',getSafeEchoTextToPage($user_odin_uri),'</font><br><br>请回到所登录设备或网站上继续访问。<br>Please go back the device or page to continue. </p></center>';
     }else{

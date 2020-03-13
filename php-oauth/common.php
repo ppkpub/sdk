@@ -1,11 +1,6 @@
 <?php
-define('COIN_TYPE_BITCOIN','bitcoin:');   
-define('COIN_TYPE_BITCOINCASH','ppk:bch/');   
-define('COIN_TYPE_BYTOM','ppk:joy/btm/');   
-
-define('DID_URI_PREFIX','did:'); //DID标识前缀
-define('PPK_URI_PREFIX','ppk:'); //ppk标识前缀
-define('PPK_URI_RES_FLAG','#');  //ppk标识资源版本前缀
+require_once('ppk_common_define.php');
+require_once('ppk_common_function.php');
 
 require_once('config/config.inc.php');
 
@@ -19,8 +14,6 @@ $server = new OAuth2\Server($storage);
 
 $server->addGrantType(new OAuth2\GrantType\ClientCredentials($storage));
 $server->addGrantType(new OAuth2\GrantType\AuthorizationCode($storage));
-
-require_once('ppk_swap.function.php');
 
 //初始化数据库连接
 $g_dbLink=@mysqli_connect($dbhost,$dbuser,$dbpass,$dbname) or die("Can not connect to the mysql server!");

@@ -40,7 +40,7 @@ require_once "page_header.inc.php";
 <div id="qrcode_area" align="center" style="display:none;">
 <p><strong><?php echo getLang('请使用支持奥丁号的APP扫码登录（如PPk浏览器、微信等）');?></strong></p>
     <div id="qrcode_img" ></div><br>
-<p>或者<a href="<?php echo $confirm_url;?>" target="LocalPPkTool" ><?php echo getLang('网页版钱包工具登录');?></a></p>
+<p>或者<a href="<?php echo $confirm_url;?>&fast_authorize_url=<?php echo urlencode($redirect_url);?>" ><?php echo getLang('网页版钱包工具登录');?></a></p>
 </div>
 <p align="center">
 <font size="-2">(<?php echo getLang('注：需升级到PPkBrowser安卓版0.305以上版本，');?><a href="https://ppkpub.github.io/docs/help_ppkbrowser/#s05"><?php echo getLang('请点击阅读这里的操作说明安装和使用。');?></a><?php echo getLang('更多信息，');?><a href="https://ppkpub.github.io/docs/" target="_blank"><?php echo getLang('可以参考奥丁号和PPk开放协议的资料进一步了解。');?></a>)</font>
