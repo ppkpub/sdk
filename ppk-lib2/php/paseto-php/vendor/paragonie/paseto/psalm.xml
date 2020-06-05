@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<psalm
+    name="Paseto Static Analysis"
+    useDocblockTypes="true"
+    totallyTyped="true"
+>
+    <projectFiles>
+        <directory name="src" />
+    </projectFiles>
+    <issueHandlers>
+        <LessSpecificReturnStatement errorLevel="info" />
+        <MoreSpecificReturnType errorLevel="info" />
+    </issueHandlers>
+</psalm>
