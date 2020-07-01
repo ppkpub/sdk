@@ -5,7 +5,7 @@ namespace PPkPub;
 兼容DID的PTAP01数字身份协议实现
 PHP SDK for PTAP01 & DID   
 -- PPkPub.org
--- 2020-04-26
+-- 2020-06-16
 */
 //require_once('firebase-php-jwt/JWT.php');
 
@@ -53,7 +53,7 @@ class PTAP01DID
     );
   
     $tmp_content = PTTP::getPPkResource($user_odin_uri);
-    //print_r($tmp_content);
+    //print_r($tmp_content);exit(-1);
     if($tmp_content['status_code']==200){
         $default_user_info['full_odin_uri']=$tmp_content['uri'];
         $tmp_user_info=@json_decode($tmp_content['content'],true);

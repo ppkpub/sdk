@@ -5,7 +5,7 @@ namespace PPkPub;
 AP节点实现相关方法（如处理兴趣包和应答数据包)
 A php sdk for processing PTTP interest and responding data   
 -- PPkPub.org
--- 2020-04-22
+-- 2020-06-16
 */
 
 require_once('Util.php');
@@ -208,14 +208,13 @@ class AP
       $str_content_type,
       $str_resp_content,
       $str_cache_as_latest ,
-      $array_local_key_set=null ) 
+      $array_local_key_set=null,
+	  $need_simple=false) 
   {
-    $array_metainfo=array(
-      "iat"=> time(),
-      "status_code" => $status_code,
-      "status_detail" => $status_detail,
-      "ap_node" => PPK_AP_NODE_NAME,
-    );
+	$array_metainfo=array(
+	      "iat"=> time(),
+		  "status_code" => $status_code,
+		);
     
     if($str_resp_content==null){
         $str_resp_content = '';
@@ -232,16 +231,20 @@ class AP
       //$array_metainfo['content_encoding']='gzip';
     }
     
-    $array_metainfo['content_type']=$str_content_type;
-    $array_metainfo['content_length']=strlen($str_resp_content);
-    
+	if(!$need_simple){
+      $array_metainfo['status_detail']=$status_detail;
+      $array_metainfo['ap_node'] = PPK_AP_NODE_NAME;
+	  $array_metainfo['content_type']=$str_content_type;
+	  $array_metainfo['content_length']=strlen($str_resp_content);
+    }
+	
     $obj_data = static::signLocalData($str_resp_uri,$array_metainfo,$str_resp_content,$str_local_uri, $array_local_key_set);
     
     //$requester_ip = Util::getclientip(); 
     //$peers=array("udp:".$requester_ip.":10775");
     //$obj_data[PTTP::PTTP_KEY_PEERS]=$peers;
 
-    return json_encode($obj_data);
+	return json_encode($obj_data);
   }
   
   //生成PTTP签名

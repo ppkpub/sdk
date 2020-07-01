@@ -5,7 +5,7 @@ namespace PPkPub;
 ODIN标识常用方法（如处理转义英文名称等)
 A php sdk for processing ODIN URI   
 -- PPkPub.org
--- 2020-04-16
+-- 2020-05-29
 */
 
 require_once('Util.php');

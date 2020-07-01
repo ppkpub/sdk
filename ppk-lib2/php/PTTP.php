@@ -5,7 +5,7 @@ namespace PPkPub;
 访问PTTP协议网络资源的PHP代码
 PHP SDK for getting PTTP URI   
 -- PPkPub.org
--- 2020-04-06
+-- 2020-06-25
 */
 
 require_once('Util.php');
@@ -40,7 +40,7 @@ class PTTP
   public static function  getPPkResource($ppk_uri,$hop=1,$enable_cache = true)
   {
     $tmp_data = STATIC::getPPkData($ppk_uri,$enable_cache );
-    //echo "PTTP::getPPkResource() ";print_r($tmp_data);
+    //echo "PTTP::getPPkResource(".$ppk_uri.") ";print_r($tmp_data);
     $status_code = $tmp_data['status_code'];
     if($status_code==200){
         return  array(
@@ -188,6 +188,7 @@ class PTTP
             }
             
         }
+        //echo '$str_ap_data=',$str_ap_data;
         
         $tmp_data= strlen($str_ap_data)==0 ? null : @json_decode($str_ap_data,true);
 
@@ -213,17 +214,27 @@ class PTTP
     //$str_pttp_interest=json_encode($array_pttp_interest);
     //$tmp_url=$ap_url.'?pttp='.urlencode($str_pttp_interest);
     
-    $tmp_url=$ap_url.'?pttp='.urlencode($str_resource_uri);
-    //echo 'PTTP::getApData() tmp_url=',$tmp_url,"\n";
+    $tmp_url=$ap_url;
+    $tmp_scheme = \PPkPub\Util::getUriScheme($ap_url);
+    if( $tmp_scheme == "http" || $tmp_scheme == "https" ){
+      $tmp_url = $ap_url.'?pttp='.urlencode($str_resource_uri);
+    }else if(  $tmp_scheme == 'ppk' ){
+      if( \PPkPub\Util::endsWith($ap_url,'/') ) {
+        $tmp_url = $ap_url."pttp(".\PPkPub\Util::strToHex($str_resource_uri).")*";
+      }
+    }
     
-    $str_ap_data = Util::simpleGetPage($tmp_url);
+    $str_ap_data = Util::fetchUriContent($tmp_url);
+    
+    //echo 'PTTP::getApData() tmp_url=',$tmp_url,"\n";
     //echo 'PTTP::getApData() str_ap_data=',$str_ap_data,"\n";
+    //exit;
     
     //验证签名待加
     
     return $str_ap_data;
   }
-
+  
   public static function getApContent( $ap_url, $str_resource_uri, $obj_parent_odin_setting = null )
   {
     $str_ap_data = static::getApData( $ap_url, $str_resource_uri,$obj_parent_odin_setting );
@@ -231,7 +242,7 @@ class PTTP
     $obj_ap_data = @json_decode($str_ap_data,true);
     //echo "PTTP::getApContent(): obj_ap_data=";print_r($obj_ap_data);
     
-    $str_ap_content = $obj_ap_data['content'];
+    $str_ap_content = @$obj_ap_data['content'];
     
     return $str_ap_content;
   }
@@ -242,13 +253,49 @@ class PTTP
                     PPK_API_SERVICE_URL : 'http://tool.ppkpub.org/ppkapi2/';
 
     $str_ap_content = STATIC::getApContent( $str_api_url, $root_odin_uri);
+	//echo "getRootOdinSettingByRemoteAPI(",$root_odin_uri,") str_api_url=", $str_api_url ," str_ap_content=",$str_ap_content;
  
-    $objSetting=@json_decode($str_ap_content,false);
+    $obj_setting=@json_decode($str_ap_content,false);
     
-    return $objSetting==null ?
-                   array('code'=>775,"msg"=>"Failed to parse the ROOT ODIN!")
-                 : array('code'=>0,"setting"=>$objSetting);
+    if($obj_setting==null)
+        return array('code'=>775,"msg"=>"Failed to parse the ROOT ODIN!");
+                 
+    $str_pns_url = trim(@$obj_setting->pns_url);
     
+    if(strlen($str_pns_url)>0){
+        //设置了标识托管服务
+        $obj_setting = STATIC::mergeRootOdinSettingFromPNS($obj_setting, $str_pns_url,$root_odin_uri);
+    }
+    
+    return array('code'=>0,"setting"=>$obj_setting);
+    
+ }
+ 
+ public static function mergeRootOdinSettingFromPNS($obj_setting, $str_pns_url,$root_odin_uri)
+ {
+    $str_pns_result = STATIC::getApContent($str_pns_url,$root_odin_uri);
+    //echo "str_pns_result=",$str_pns_result,"\n";exit;
+    $obj_pns_setting=@json_decode($str_pns_result,false);
+    //$array_setting = array_merge($array_setting,$obj_pns_setting);
+    
+    if(isset($obj_pns_setting)){
+        //合并对象属性字段
+        $ignore_pns_keys=array('register','admin','auth','pns_url'); //需过滤的敏感基础字段（只以BTC链上数据为准）
+        
+        foreach($obj_pns_setting as $pns_key => $pns_value) {
+            if(!in_array( $pns_key , $ignore_pns_keys))
+                $obj_setting->$pns_key = $pns_value; 
+        } 
+        
+        //将"pns_url"字段名改为"from_pns_url"表示已经调用pns解析处理
+        $obj_setting->from_pns_url = $str_pns_url;
+        unset($obj_setting->pns_url);
+        
+        //print_r($obj_setting); 
+        //echo json_encode($obj_setting);
+        //exit(-1);
+    }
+    return $obj_setting;
  }
 
 }

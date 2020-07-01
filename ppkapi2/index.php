@@ -3,7 +3,7 @@
 解析ODIN命名标识的API服务的PHP代码
 A php json-api service for parsing ODIN URI using the sqlite database of ODIN-javatool daemon  
 -- PPkPub.org
--- 2020-04-06
+-- 2020-07-01
 */
 ini_set("display_errors", "On"); 
 error_reporting(E_ALL | E_STRICT);
@@ -45,6 +45,7 @@ $gDefaultKeySet=array(
 
 $array_req = \PPkPub\AP::parsePttpInterest();
 $str_pttp_uri = $array_req['uri'];
+$force_pns = \PPkPub\Util::safeReqChrStr('force_pns')=='on';
 
 if(!isset($str_pttp_uri)){
   respPttpException( '', '400',"Bad Request : no valid uri " );
@@ -116,7 +117,7 @@ if($str_pttp_uri=='ppk:btm*' || $str_pttp_uri=='ppk:btm' ){ //临时测试
 
     //只负责解析根标识
     if( strlen($array_ppk_uri['parent_odin_path'])==0 )
-        respRootOdinSetting($array_ppk_uri['resource_id']);
+        respRootOdinSetting($array_ppk_uri['resource_id'],$force_pns);
     else
         //respRootOdinSetting($array_ppk_uri['odin_chunks'][0]);
         respPttpException( '', '503',"Bad Request : only support root ODIN like ppk:joy " );
@@ -124,7 +125,7 @@ if($str_pttp_uri=='ppk:btm*' || $str_pttp_uri=='ppk:btm' ){ //临时测试
 
 
 
-function respRootOdinSetting($root_odin)
+function respRootOdinSetting($root_odin,$force_pns=false)
 {
     $str_root_odin_uri = \PPkPub\ODIN::PPK_URI_PREFIX.$root_odin.\PPkPub\ODIN::PPK_URI_RESOURCE_MARK ;
     
@@ -143,30 +144,17 @@ function respRootOdinSetting($root_odin)
         if(empty(@$obj_setting->ap_set)){
             //测试使用默认的PNS服务
             $str_pns_url = 'http://tool.ppkpub.org/ap2/';
+            $obj_setting->pns_url = $str_pns_url;
         } 
     }
-    
-    if(strlen($str_pns_url)>0){
+
+    if($force_pns && strlen($str_pns_url)>0){
         //设置了标识托管服务
-        $str_pns_result = \PPkPub\PTTP::getApContent($str_pns_url,$str_root_odin_uri);
-        //echo "str_pns_result=",$str_pns_result,"\n";
-        $obj_pns_setting=@json_decode($str_pns_result,false);
-        //$array_setting = array_merge($array_setting,$obj_pns_setting);
-        //合并对象属性字段
-        $ignore_pns_keys=array('register','admin','auth','pns_url'); //需过滤的敏感基础字段（只以BTC链上数据为准）
-        
-        foreach($obj_pns_setting as $pns_key => $pns_value) {
-            if(!in_array( $pns_key , $ignore_pns_keys))
-                $obj_setting->$pns_key = $pns_value; 
-        } 
-        
-        //将"pns_url"字段名改为"from_pns_url"表示已经调用pns解析处理
-        $obj_setting->from_pns_url = $str_pns_url;
-        unset($obj_setting->pns_url);
-        
-        //print_r($obj_setting); 
-        //echo json_encode($obj_setting);
-        //exit(-1);
+        //注意使用自动解析PSN服务，可能会导致安卓客户端处理程序出现下述JSON解码错误，所以默认是关闭的 20200624
+        //java.lang.NullPointerException: Attempt to invoke virtual method 'int java.lang.String.length()' on a null object reference
+   	    //  at org.json.JSONTokener.nextCleanInternal(JSONTokener.java:116)
+	    //  at org.json.JSONTokener.nextValue(JSONTokener.java:94)
+        $obj_setting = \PPkPub\PTTP::mergeRootOdinSettingFromPNS($obj_setting, $str_pns_url,$str_root_odin_uri);
     }
 
     
@@ -222,9 +210,6 @@ function getRootOdinSettingFromLocalDB($root_odin)
     
     $array_authentication=array();
     
-    /*
-    //取消将根标识登记在比特币区块链上的vd_set作为身份验证使用，这样逻辑上更清楚，避免理解混乱和可能的安全风险。 20200407
-    */
     if( isset($objSetting->vd_set) 
       && isset($objSetting->vd_set->pubkey)){ //现在只支持RSA
        $str_pubkey_pem = \PPkPub\Util::startsWith($objSetting->vd_set->pubkey,"-----BEGIN ") 

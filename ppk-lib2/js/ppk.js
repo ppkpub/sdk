@@ -2,7 +2,7 @@
 访问PPk开放协议的JS代码
 JS SDK for PPk ODIN&PTTP protocols   
 -- PPkPub.org
--- 2020-04-09
+-- 2020-07-01
 */
  
 var PPKLIB = function() {
@@ -14,10 +14,8 @@ var PPKLIB = function() {
     var _mbSupportPeerWebPlugin = false;
     
     //ODIN根标识解析服务
-    var PPK_ROOT_ODIN_API_URL = "https://tool.ppkpub.org/ppkapiv2/";
+    var PPK_ROOT_ODIN_API_URL = "https://tool.ppkpub.org/ppkapi2/";
     
-    //用于在当前请求处理过程中缓存获得的PPk数据
-    //var gCachedPPkResources={}; 
     
     //解构PPK资源地址
     var _splitPPkURI = function(ppk_uri){
@@ -30,7 +28,7 @@ var PPKLIB = function() {
         resource_id="";
         req_resource_versoin="";
 
-        tmp_chunks=ppk_uri.substring("ppk:".length).split("#");
+        tmp_chunks=ppk_uri.substring("ppk:".length).split("*");
         console.log("tmp_chunks=",JSON.stringify(tmp_chunks));
         if(tmp_chunks.length>=2){
           req_resource_versoin=tmp_chunks[1];
@@ -60,16 +58,82 @@ var PPKLIB = function() {
             };
     };
     
-    var _parseJsonObjFromAjaxResult = function(result){
-        return typeof result == 'string ' ?  
-                                    JSON.parse( result ) : result;
-    };
+    //读取缓存
+    var _readCache = function(uri){
+        try{
+            str_cache_info = getLocalConfigData( uri );
+            if( str_cache_info==null || str_cache_info.length==0 ){
+                console.log("readCache() no cache for "+uri );
+                return null;
+            }
+            
+            obj_cache_info = JSON.parse( str_cache_info );
+            
+            exp_utc = obj_cache_info.exp_utc ;
+            now = getNowTimeStamp();
+            //console.log("readCache() exp_utc="+exp_utc+ " left:"+(exp_utc-now));
+            
+            if( exp_utc!=-1 && exp_utc < now){
+                console.log("Delete expired cache for "+uri);
+                removeLocalConfigData(uri);
+                return null;
+            }
+            
+            chunk_content_bytes = getLocalConfigData(obj_cache_info.data_key);
+            
+            if(chunk_content_bytes==null){ //无效的内容数据
+                console.log("readCache() no valid data for "+ obj_cache_info.data_key );
+                return null;
+            }
+
+            console.log("readCache() OK for "+uri);
+            
+            return decompressStr(chunk_content_bytes);
+        }catch(e){
+            console.log("readCache("+uri+") error:"+e);
+            return null;
+        }
+        
+    }
+    
+    //写入缓存
+    var _saveCache = function(ppk_uri,str_pttp_data){
+      try{
+        ap_resp_ppk_uri = ppk_uri;
+        
+        //ap_resp_ppk_uri = ODIN.formatPPkURI(ap_resp_ppk_uri);
+        //if(ap_resp_ppk_uri==null) //不规范的URI将不被缓存
+        //    return false;
+        
+        chunk_content_bytes = compressStr(str_pttp_data);
+        
+        cache_as_latest_seconds = 3600 ; //缺省缓存1小时
+
+        exp_utc= getNowTimeStamp() + cache_as_latest_seconds;
+        
+        obj_cache_info = new Object();
+
+        obj_cache_info.exp_utc=exp_utc;
+        obj_cache_info.data_key="data-"+ap_resp_ppk_uri;
+        
+        str_cache_info = JSON.stringify(obj_cache_info)
+        saveLocalConfigData( ap_resp_ppk_uri, str_cache_info  );
+        saveLocalConfigData( obj_cache_info.data_key, chunk_content_bytes  ); 
+        
+        console.log("saveCache() ok: "+ ap_resp_ppk_uri+ "\n str_cache_info="+str_cache_info);
+
+        return true;
+      }catch(e){
+        console.log("saveCache() error:"+e.toString());
+        return false;
+      }
+    }
 
 
-    var _getApPayloadByAjax = function(obj_ppk_uri_info,path_level,parent_odin_setting,callback_function){
+    var _getApDataByAjax = function(obj_ppk_uri_info,path_level,parent_odin_setting,use_cache,callback_function){
         console.log("getApData() obj_ppk_uri_info="+JSON.stringify(obj_ppk_uri_info));
         console.log("path_level="+path_level);
-        console.log("parent_odin_setting="+JSON.stringify(parent_odin_setting));
+        //console.log("parent_odin_setting="+JSON.stringify(parent_odin_setting));
         
         var current_uri=null;
         var str_ap_url=null;
@@ -77,13 +141,13 @@ var PPKLIB = function() {
         var next_parent_odin_path=null;
         
         if(path_level==0){ //根标识
-            current_uri = 'ppk:'+ obj_ppk_uri_info.odin_chunks[0] + "#";
+            current_uri = 'ppk:'+ obj_ppk_uri_info.odin_chunks[0] + "*";
             
             if(is_leaf_resource){
                 current_uri += obj_ppk_uri_info.resource_versoin;
             }
             
-            str_ap_url = PPK_ROOT_ODIN_API_URL+"?pttp_interest="+encodeURIComponent(current_uri);
+            str_ap_url = PPK_ROOT_ODIN_API_URL+"?force_pns=on&pttp="+encodeURIComponent(current_uri);
             next_parent_odin_path=obj_ppk_uri_info.odin_chunks[0]+"/";
         }else { //扩展标识
             current_uri = 'ppk:'+ obj_ppk_uri_info.odin_chunks[0];
@@ -92,22 +156,22 @@ var PPKLIB = function() {
             }
             
             if(is_leaf_resource){
-                current_uri += "/"+obj_ppk_uri_info.resource_id +"#"+obj_ppk_uri_info.resource_versoin;
+                current_uri += "/"+obj_ppk_uri_info.resource_id +"*"+obj_ppk_uri_info.resource_versoin;
             }else{
                 next_parent_odin_path = current_uri +"/";
-                current_uri += "/"+obj_ppk_uri_info.odin_chunks[path_level]+"#";
+                current_uri += "/"+obj_ppk_uri_info.odin_chunks[path_level]+"*";
             }
             
             
             if( !parent_odin_setting.hasOwnProperty("ap_set") ){
                 callback_function("Invalid ap_set",{'status_code':503,'status_detail':"Invalid parent ap_set for "+current_uri});
-                return;
+                return false;
             }
             
             for(var ap_id in parent_odin_setting.ap_set) {
                 tmp_ap_url = parent_odin_setting.ap_set[ap_id]['url'];
                 console.log("AP[",ap_id,"]:",tmp_ap_url);
-                str_ap_url = tmp_ap_url+"?pttp_interest="+encodeURIComponent(current_uri);
+                str_ap_url = tmp_ap_url+"?pttp="+encodeURIComponent(current_uri);
                 break; //目前只是用第一个AP,待完善遍历使用全部可能的AP直到获得有效应答
             }
         }
@@ -117,55 +181,87 @@ var PPKLIB = function() {
         console.log("is_leaf_resource=",is_leaf_resource);
         console.log("next_parent_odin_path=",next_parent_odin_path);
         
+        if(use_cache){ //缓存处理
+            str_pttp_data = _readCache(current_uri);
+            var obj_resp = parseJsonObjFromAjaxResult(str_pttp_data);
+            if(obj_resp!=null){
+                return _processApDataByAjax(obj_ppk_uri_info,obj_resp,path_level,parent_odin_setting,use_cache,callback_function);
+            }
+        }
+        
         $.ajax({
             type: "GET",
             url: str_ap_url,
             data: {},
-            success : function (result) {
-                var obj_resp = _parseJsonObjFromAjaxResult(result);
+            dataType: "text",
+            success : function (str_pttp_data) {
+                var obj_resp = parseJsonObjFromAjaxResult(str_pttp_data);
 
                 if(obj_resp==null){
                     callback_function("AP response is null",null);
-                    return;
+                    return false;
                 }
-                                    
-                obj_payload = JSON.parse( obj_resp.hasOwnProperty("payload")? obj_resp.payload : obj_resp.data ); //兼容旧版本PTTP协议数据
                 
-                if(obj_payload.status_code==200){
-                    var content=obj_payload.content;
-                    //var content=window.atob(obj_payload.content_base64);
-                    console.log("type=",obj_payload.metainfo.content_type," \nlength=",obj_payload.metainfo.content_length,"\nservice_url=",obj_payload.uri);
-                    //console.log("content=",content);
-                    
-                    //验证签名合法性待完善
-
-                    if(is_leaf_resource){
-                        callback_function("OK",obj_payload);
-                    }else{
-                        next_parent_odin_setting = JSON.parse( obj_payload.content );
-                        if(parent_odin_setting!=null){
-                            if( !next_parent_odin_setting.hasOwnProperty("ap_set") &&  parent_odin_setting.hasOwnProperty("ap_set") )
-                            { //子级未设置有效AP参数时，默认继承上一级
-                                next_parent_odin_setting.ap_set = parent_odin_setting.ap_set;
-                            }
-                            if( !next_parent_odin_setting.hasOwnProperty("vd_set") &&  parent_odin_setting.hasOwnProperty("vd_set")  )
-                            { //子级未设置有效验证参数时，默认继承上一级
-                                next_parent_odin_setting.vd_set = parent_odin_setting.vd_set;
-                            }
-                        }
-                        _getApPayloadByAjax(obj_ppk_uri_info,path_level+1,next_parent_odin_setting,callback_function);
-                    }
-                }else{
-                    console.log("出错了，请重试！\n"+obj_payload.status_detail);
-                    callback_function("PTTP ERROR",null);
-                }
+                //验证签名合法性
+                //待完善
+                
+                //缓存
+                _saveCache(current_uri,str_pttp_data);
+                
+                return _processApDataByAjax(obj_ppk_uri_info,obj_resp,path_level,parent_odin_setting,use_cache,callback_function);
             },
             error:function(xhr,state,errorThrown){
-                console.log("出错了，请重试！\n"+obj_payload.status_detail);
+                console.log("Meet AJAX error!");
                 callback_function("AJAX ERROR",null);
             }
         });
+        
+        return false;
     };
+    
+    var _processApDataByAjax = function(obj_ppk_uri_info,obj_resp,path_level,parent_odin_setting,use_cache,callback_function){
+
+        var is_leaf_resource = ( path_level == obj_ppk_uri_info.odin_chunks.length - 1 );
+        
+        if(is_leaf_resource){
+            callback_function("OK",obj_resp);
+            return true;
+        }else{
+            console.log("obj_resp.metainfo="+typeof(obj_resp.metainfo));
+            obj_metainfo= parseJsonObjFromAjaxResult(obj_resp.metainfo); 
+            console.log("obj_metainfo="+obj_metainfo);
+            if( obj_metainfo!=null && obj_metainfo.status_code==200){
+                var content=obj_resp.content;
+                //var content=window.atob(obj_payload.content_base64);
+                console.log("_getApDataByAjax() uri=",obj_resp.uri+"\ntype=",obj_metainfo.content_type," \nlength=",obj_metainfo.content_length);
+                //console.log("content=",content);
+
+                next_parent_odin_setting = JSON.parse( content );
+                if(parent_odin_setting!=null){
+                    if( !next_parent_odin_setting.hasOwnProperty("ap_set") &&  parent_odin_setting.hasOwnProperty("ap_set") )
+                    { //子级未设置有效AP参数时，默认继承上一级
+                        next_parent_odin_setting.ap_set = parent_odin_setting.ap_set;
+                    }
+                    if( !next_parent_odin_setting.hasOwnProperty("vd_set") &&  parent_odin_setting.hasOwnProperty("vd_set")  )
+                    { //子级未设置有效验证参数时，默认继承上一级
+                        next_parent_odin_setting.vd_set = parent_odin_setting.vd_set;
+                    }
+                }
+                
+                return  _getApDataByAjax(obj_ppk_uri_info,path_level+1,next_parent_odin_setting,use_cache,callback_function);
+                
+            }else{
+                var str_err = "PTTP status : "+obj_metainfo.status_code +" ";
+                if( obj_metainfo!=null && obj_metainfo.hasOwnProperty('status_detail') ){
+                    str_err += obj_metainfo.status_detail;
+                }
+                console.log(str_err);
+                callback_function("PTTP exception",str_err);
+            }
+        }
+        
+        return false;
+    }
     
     //获得方法对象的名称
     var _getFuncName = function(callee)
@@ -220,7 +316,7 @@ var PPKLIB = function() {
     // *** PUBLIC PROPERTIES AND METHODS *******************************
     // *****************************************************************
     return {
-        version: "0.1.20200409", 
+        version: "0.1.20200629", 
         
         // -- UTILITY METHODS ------------------------------------------------------------
         
@@ -252,37 +348,31 @@ var PPKLIB = function() {
         },
         
         //调用AJAX方式获取PPK网络资源
-        loadPPkResourceByAjax: function(ppk_uri,callback,enable_cache = false){
+        loadPPkDataByAjax: function(ppk_uri,use_cache = false,callback){
             ppk_uri=this.formatPPkURI(ppk_uri);   
 
             if(ppk_uri==null){
                 callback("Invalid ppk uri",null);
             }
 
-            /*
-            if(enable_cache){ //缓存处理
-                if(isset(gCachedPPkResources)){
-                    if(isset(gCachedPPkResources[ppk_uri])){
-                        //echo "Matched cache<br>\n";
-                        return gCachedPPkResources[ppk_uri];
-                    }
-                }else{
-                    gCachedPPkResources=array();
+            if(use_cache){ //缓存处理
+                str_pttp_data = _readCache(ppk_uri);
+                if(str_pttp_data!=null){
+                    return callback("OK",parseJsonObjFromAjaxResult(str_pttp_data));
                 }
             }
-            */
             
             var obj_ppk_uri_info = _splitPPkURI(ppk_uri);
             
             console.log("callback=",_getFuncName(callback));
 
             //递归解析多级路径直到叶子资源
-            _getApPayloadByAjax(obj_ppk_uri_info,0,null,callback);
+            _getApDataByAjax(obj_ppk_uri_info,0,null,use_cache,callback);
 
         },
         
         //调用Plugin方式获取PPK网络资源
-        loadPPkResourceByPlugin: function(ppk_uri,callback,enable_cache = false){
+        loadPPkDataByPlugin: function(ppk_uri,use_cache = false,callback){
             if(!_mbSupportPeerWebPlugin){
                 callback("Not support plugin",null);
             }
@@ -295,21 +385,46 @@ var PPKLIB = function() {
 
             PeerWeb.getPPkResource(
                 ppk_uri,
-                'content',
+                'full',
                 _getFuncName(callback)  //回调方法名称
             );
 
         },
         
-        //获取PPk网络资源,自动选用Plugin（优先支持）或AJAX方式
+        //获取PPk原始数据包,自动选用Plugin（优先支持）或AJAX方式
         //所获得结果将作为参数传给指定的callback回调方法处理
-        //回调方法参数为status字符串（正常为OK,出错为相应的错误代码）和对应PTTP数据报文的payload对象字段（无法获得数据时为null）
-        loadPPkResource: function(ppk_uri,callback,enable_cache = false){
+        //回调方法参数为status字符串（正常为OK,出错为相应的错误代码）和对应PTTP数据报文完整对象字段（无法获得数据时为null）
+        getPPkData: function(ppk_uri,callback,use_cache = true){
             if(_mbSupportPeerWebPlugin){
-                this.loadPPkResourceByPlugin(ppk_uri,callback,enable_cache);
+                this.loadPPkDataByPlugin(ppk_uri,use_cache,callback);
             }else{
-                this.loadPPkResourceByAjax(ppk_uri,callback,enable_cache)
+                this.loadPPkDataByAjax(ppk_uri,use_cache,callback)
             }
         },
+        
+        getContentFromData: function(obj_resp){
+            console.log("getContentFromData() result uri=",obj_resp.uri);
+            
+            if(obj_resp==null){
+                return null;
+            }
+                
+            obj_metainfo= parseJsonObjFromAjaxResult(obj_resp.metainfo); 
+            
+            if( obj_metainfo!=null && obj_metainfo.status_code==200){
+                var content=obj_resp.content;
+                console.log("getContentFromData() uri=",obj_resp.uri+"\ntype=",obj_metainfo.content_type," \nlength=",obj_metainfo.content_length);
+
+                return content;
+            }else{
+                var str_err = "PTTP status : "+obj_metainfo.status_code +" ";
+                if( obj_metainfo!=null && obj_metainfo.hasOwnProperty('status_detail')){
+                    str_err += obj_metainfo.status_detail;
+                }
+                console.log(str_err);
+                return null;
+            }
+        },
+            
     }
 }();

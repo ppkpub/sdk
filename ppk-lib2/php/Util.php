@@ -6,7 +6,7 @@ namespace PPkPub;
 常用公共方法
 Common Funtions
 -- PPkPub.org
--- 2020-04-15
+-- 2020-06-25
 */
 
 class Util
@@ -88,16 +88,16 @@ class Util
 
     public static function strToHex($string){
         $hex='';
-        for ($i=0; $i < strlen($string); $i++){
-            $hex .= dechex(ord($string[$i]));
+        if ( strlen($string)>0 ){
+            $hex = bin2hex($string);
         }
         return $hex;
     }
 
     public static function hexToStr($hex){
         $string='';
-        for ($i=0; $i < strlen($hex)-1; $i+=2){
-             $string .= chr(hexdec($hex[$i].$hex[$i+1]));
+        if ( strlen($hex)>0 ){
+             $string = @pack("H*",$hex);
         }
         return $string;
     }
@@ -319,7 +319,7 @@ class Util
             $argValue=@$postArgus[$argvName];
         }
         
-        if (false==get_magic_quotes_gpc()) 
+        if (false==@get_magic_quotes_gpc()) 
         {
             $newArgValue = addslashes($argValue);
             if(strlen($newArgValue)>0)
@@ -362,7 +362,7 @@ class Util
         {
             $argValue=@$postArgus[$argvName];
         }
-        if (true==get_magic_quotes_gpc()) 
+        if (true==@get_magic_quotes_gpc()) 
         {    //恢复原样的字符串
             $newArgValue = stripslashes($argValue);
             if(strlen($newArgValue)>0)
@@ -435,7 +435,7 @@ class Util
     }
 
     //简单的获取网页方法（可设定超时时间，重试次数）
-    public static function  simpleGetPage($url,$timeout=5,$retry=1){
+    public static function  simpleGetPage($url,$timeout=10,$retry=1){
        $opts = array(   
            'http'=>array(   
                'method'=>"GET",   
@@ -498,4 +498,80 @@ class Util
       $realip = !empty($onlineip[0]) ? $onlineip[0] : '0.0.0.0';
       return $realip;
    }
+   
+   //获取IPFS数据
+   public static function getIpfsData($ipfs_hash){
+      require_once(PPK_LIB_DIR_PREFIX.'ipfs-php/IPFS.php');
+      $ipfs = new \Cloutier\PhpIpfsApi\IPFS("tool.ppkpub.org", "8080", "5001"); 
+      $ap_demo_content = @$ipfs->cat($ipfs_hash);
+      return $ap_demo_content;
+  }
+  
+  //获取URI的正文内容
+  //会自动处理301/302转向得到最终内容
+  public static function fetchUriContent($uri){
+      //echo "fetchUriContent:",$uri;exit;
+      $uri_chunks=explode(':',$uri);
+      if( count($uri_chunks)<2 ){
+    	//meet invalid uri
+        return null;
+      }
+      
+      $tmp_scheme = strtolower( $uri_chunks[0]) ;
+      
+      if( $tmp_scheme == "ppk" ){
+        $tmp_content = \PPkPub\PTTP::getPPkResource($uri);
+        if($tmp_content['status_code']==200){
+            return $tmp_content['content'];
+        }
+      }else if( $tmp_scheme == "ipfs" ){
+        return STATIC::getIpfsData($uri_chunks[1]);
+      }else  if( $tmp_scheme  == "data" ){
+        $from=strpos($uri_chunks[1],",");
+        if( $from===false )
+          return $uri_chunks[1];
+        else
+          return substr($uri_chunks[1],$from+1);
+      }else if( $tmp_scheme == "http" || $tmp_scheme == "https" ){
+        return STATIC::simpleGetPage($uri);
+      }
+      
+      return null;  
+  }
+  
+  //获取URI的前缀（统一转换为小写）
+  public static function getUriScheme($uri){
+      $uri_chunks=explode(':',$uri);
+      if( count($uri_chunks)<2 ){
+    	//meet invalid uri
+        return null;
+      }
+      
+      return strtolower( $uri_chunks[0]) ;
+  }
+  
+  //将整数转换为指定位数的小数。主要用于货币按不同单位的换算
+  public static function convertIntToFloat($amount, $decimals){
+    $amount_str = ''.$amount;
+    
+    $left_number = strlen($amount_str)-$decimals;
+    
+    
+    if( $left_number>0 ){
+        $amount_float_str = substr($amount_str,0,$left_number).'.'.substr($amount_str,$left_number);
+    }else{
+        $amount_float_str = '0.';
+        
+        $right_number = -$left_number;
+        
+        for($kk=0; $kk < $right_number ; $kk++){
+            $amount_float_str .= '0';
+        }
+        
+        $amount_float_str .= $amount_str;
+    }
+    
+    return $amount_float_str;
+  }
+
 }
