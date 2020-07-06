@@ -2,7 +2,7 @@
 访问PPk开放协议的JS代码
 JS SDK for PPk ODIN&PTTP protocols   
 -- PPkPub.org
--- 2020-07-01
+-- 2020-07-06
 */
  
 var PPKLIB = function() {
@@ -14,7 +14,10 @@ var PPKLIB = function() {
     var _mbSupportPeerWebPlugin = false;
     
     //ODIN根标识解析服务
-    var PPK_ROOT_ODIN_API_URL = "https://tool.ppkpub.org/ppkapi2/";
+    const PPK_ROOT_ODIN_API_URL = "https://tool.ppkpub.org/ppkapi2/";
+    
+    //IPFS访问代理服务
+    const IPFS_CAT_SERVICE_URL= 'https://ipfs.eternum.io/ipfs/';
     
     
     //解构PPK资源地址
@@ -171,7 +174,17 @@ var PPKLIB = function() {
             for(var ap_id in parent_odin_setting.ap_set) {
                 tmp_ap_url = parent_odin_setting.ap_set[ap_id]['url'];
                 console.log("AP[",ap_id,"]:",tmp_ap_url);
-                str_ap_url = tmp_ap_url+"?pttp="+encodeURIComponent(current_uri);
+                
+                if( tmp_ap_url.toLowerCase().startsWith('http') ){
+                    str_ap_url = tmp_ap_url+"?pttp="+encodeURIComponent(current_uri);
+                }else if( tmp_ap_url.startsWith('ppk:') && tmp_ap_url.endsWith('/') ){
+                    str_ap_url = tmp_ap_url+"pttp("+stringToHex(current_uri)+")*";
+                }else if( tmp_ap_url.toLowerCase().startsWith('ipfs:') ){
+                    str_ap_url = IPFS_CAT_SERVICE_URL+tmp_ap_url.substr(5);
+                }else{
+                    str_ap_url = tmp_ap_url;
+                } 
+                    
                 break; //目前只是用第一个AP,待完善遍历使用全部可能的AP直到获得有效应答
             }
         }
@@ -189,33 +202,73 @@ var PPKLIB = function() {
             }
         }
         
-        $.ajax({
-            type: "GET",
-            url: str_ap_url,
-            data: {},
-            dataType: "text",
-            success : function (str_pttp_data) {
-                var obj_resp = parseJsonObjFromAjaxResult(str_pttp_data);
+        if( str_ap_url.startsWith('ppk:') ){
+            var tmp_callback =function(tmp_status,tmp_result){
+                if('OK'==tmp_status){
+                    obj_result_data = parseJsonObjFromAjaxResult(tmp_result);
+                    
+                    str_pttp_data = PPKLIB.getContentFromData(obj_result_data);
+                    var obj_resp = parseJsonObjFromAjaxResult( str_pttp_data );
+                    
+                    if(obj_resp==null){
+                        callback_function("AP response is null",null);
+                        return false;
+                    }
+                    
+                    //验证签名合法性
+                    //待完善
+                    
+                    //缓存
+                    _saveCache(current_uri,str_pttp_data);
 
-                if(obj_resp==null){
-                    callback_function("AP response is null",null);
-                    return false;
+                    return _processApDataByAjax(obj_ppk_uri_info,obj_resp,path_level,parent_odin_setting,use_cache,callback_function);
+                }else{
+                    console.log("Meet Invalid PPk AP!");
+                    callback_function("AP ERROR","Invalid PPk AP");
                 }
-                
-                //验证签名合法性
-                //待完善
-                
-                //缓存
-                _saveCache(current_uri,str_pttp_data);
-                
-                return _processApDataByAjax(obj_ppk_uri_info,obj_resp,path_level,parent_odin_setting,use_cache,callback_function);
-            },
-            error:function(xhr,state,errorThrown){
-                console.log("Meet AJAX error!");
-                callback_function("AJAX ERROR",null);
             }
-        });
-        
+            getPPkData(str_ap_url,tmp_callback,true)
+        }else{
+           $.ajax({
+                type: "GET",
+                url: str_ap_url,
+                data: {},
+                dataType: "text",
+                success : function (tmp_result) {
+                    var obj_resp = null;
+                    var str_pttp_data = null;
+                    if(tmp_result.startsWith('{')){
+                        obj_resp = parseJsonObjFromAjaxResult(tmp_result);
+                        str_pttp_data = tmp_result;
+                    }else{
+                        obj_resp = {
+                            'uri' : current_uri,
+                            'metainfo':JSON.stringify({"status_code":200,"content_type":"","content_length":tmp_result.length}),
+                            'content': tmp_result
+                        };
+                        str_pttp_data = JSON.stringify(obj_resp);
+                    }
+                    
+                    if(obj_resp==null){
+                        callback_function("AP response is null",null);
+                        return false;
+                    }
+                    
+                    //验证签名合法性
+                    //待完善
+                    
+                    //缓存
+                    _saveCache(current_uri,str_pttp_data);
+                    
+                    return _processApDataByAjax(obj_ppk_uri_info,obj_resp,path_level,parent_odin_setting,use_cache,callback_function);
+                },
+                error:function(xhr,state,errorThrown){
+                    console.log("Meet AJAX error!");
+                    callback_function("AJAX ERROR",null);
+                }
+            }); 
+            
+        }
         return false;
     };
     

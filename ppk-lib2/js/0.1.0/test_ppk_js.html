@@ -3,7 +3,7 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>测试AJAX访问PPk网络内容</title>
+    <title>测试使用PPk-JS访问PPk网络内容</title>
     <link href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
     <script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
@@ -11,7 +11,7 @@
 <body>
 
 
-<h3>测试AJAX访问PPk网络内容</h3>
+<h3>测试使用PPk-JS访问PPk网络内容</h3>
 
 <form class="form-horizontal">
 <div class="form-group">
@@ -29,6 +29,9 @@
         <option value="ppk:ap2/sub/test.png*1.0"/>
         <option value="ppk:ap2/sub/test.png*2.0"/>
         <option value="ppk:ap2/sub/nover.png*"/>
+        <option value="ppk:vdtso/"/>
+        <option value="ppk:joy/rinkeby/0xa6f7ee6c6cfe0b41f2c51eba7a4fa798083c5cb2/pttp(70706B3A38333931312A)*"/>
+        <option value="ppk:105922/"/>
       </datalist>
     </div>
 </div>
@@ -48,14 +51,14 @@
 </form>
 
 <div class="form-group">
-    <label for="debug_data" class="col-sm-2 control-label">DEBUG数据DATA</label>
+    <label for="debug_data" class="col-sm-2 control-label">原始数据(PTTP Data)</label>
     <div class="col-sm-10">
       <textarea class="form-control"  id="debug_data" rows=10 readonly></textarea>
     </div>
 </div>
 
 <div class="form-group">
-    <label for="debug_content" class="col-sm-2 control-label">DEBUG内容Content</label>
+    <label for="debug_content" class="col-sm-2 control-label">正文内容(Content)</label>
     <div class="col-sm-10">
       <textarea class="form-control"  id="debug_content" rows=10 readonly></textarea>
     </div>
