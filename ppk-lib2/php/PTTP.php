@@ -5,7 +5,7 @@ namespace PPkPub;
 访问PTTP协议网络资源的PHP代码
 PHP SDK for getting PTTP URI   
 -- PPkPub.org
--- 2020-06-25
+-- 2020-07-08
 */
 
 require_once('Util.php');
@@ -55,7 +55,7 @@ class PTTP
         return  array(
                     'status_code' => $status_code,
                     'uri' => @$tmp_data['uri'],
-                    'status_detail' => @$tmp_data['metainfo']['status_detail'],
+                    'status_detail' =>  isset($tmp_data['status_detail']) ? $tmp_data['status_detail'] : @$tmp_data['metainfo']['status_detail'],
                 ); 
     }
   }
@@ -150,6 +150,10 @@ class PTTP
                     
                     if($obj_parent_odin_setting!=null)
                         break;
+                }
+                
+                if( $obj_parent_odin_setting==null ){ //遇到异常应答如不存在的标识子路径,20200708
+                    return array('status_code'=>775,'status_detail'=>"invalid odin setting for ".$parent_ppk_uri);
                 }
                 
                 if($obj_parent_odin_setting!=null){
